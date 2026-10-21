@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cracktime · Password Strength Checker</title>
+  <meta name="description" content="See how long your password would survive a real attack. Strength meter, crack-time estimates, breach check, and a passphrase generator. Runs entirely in your browser.">
+  <meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f6f7f4" media="(prefers-color-scheme: light)">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <script src="js/theme.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip" href="#checker">Skip to checker</a>
+
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="#" aria-label="Cracktime home">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="14" width="20" height="14" rx="3"/><path d="M11 14v-4a5 5 0 0 1 10 0v4" fill="none" stroke-width="3"/><circle cx="16" cy="21" r="2.2"/></svg>
+        <span>Cracktime</span>
+      </a>
+      <div class="theme-switch" role="radiogroup" aria-label="Color theme">
+        <button type="button" role="radio" data-theme-choice="light" aria-label="Light theme" title="Light">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          <span>Light</span>
+        </button>
+        <button type="button" role="radio" data-theme-choice="dark" aria-label="Dark theme" title="Dark">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+          <span>Dark</span>
+        </button>
+        <button type="button" role="radio" data-theme-choice="system" aria-label="Match system theme" title="System">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+          <span>System</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero wrap">
+      <p class="eyebrow">Password strength checker</p>
+      <h1>How long would your password <em>actually</em> survive?</h1>
+      <p class="lede">Type a password to see what an attacker sees: the patterns they'd spot, and how long it would take to crack it, from a locked-down login page to a stolen database on a GPU rig.</p>
+      <p class="privacy-pill">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>
+        Everything runs in your browser. Your password never leaves this page.
+      </p>
+    </section>
+
+    <section id="checker" class="wrap">
+      <div class="card checker">
+        <label for="pw" class="field-label">Your password</label>
+        <div class="pw-field">
+          <input id="pw" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Start typing…" aria-describedby="verdict">
+          <button type="button" id="toggle-vis" class="icon-btn" aria-label="Show password" aria-pressed="false">
+            <svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.1 6.1A17 17 0 0 0 2 12s3.6 7 10 7a10 10 0 0 0 4.4-1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+          </button>
+          <button type="button" id="clear" class="icon-btn" aria-label="Clear password" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+
+        <div class="meter" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <div class="verdict" id="verdict" aria-live="polite">
+          <strong id="label">Waiting for a password</strong>
+          <span id="bits" class="mono muted"></span>
+        </div>
+
+        <div id="results" class="results" hidden>
+          <div class="block">
+            <h2 class="block-title">Time to crack</h2>
+            <ul class="scenarios" id="scenarios"></ul>
+          </div>
+
+          <div class="split">
+            <div class="block">
+              <h2 class="block-title">Checklist</h2>
+              <ul class="checks" id="checks">
+                <li data-check="length">12 or more characters</li>
+                <li data-check="lower">Lowercase letter</li>
+                <li data-check="upper">Uppercase letter</li>
+                <li data-check="number">Number</li>
+                <li data-check="symbol">Symbol</li>
+                <li data-check="notCommon">Not a known common password</li>
+                <li data-check="noPatterns">No words, years, or keyboard runs</li>
+              </ul>
+            </div>
+            <div class="block">
+              <h2 class="block-title">What an attacker spots</h2>
+              <div id="anatomy" class="anatomy mono" aria-label="Password broken into the pieces an attacker would guess"></div>
+              <ul id="warnings" class="notes warn"></ul>
+              <h3 class="block-subtitle">Make it stronger</h3>
+              <ul id="suggestions" class="notes"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card breach">
+        <div class="breach-head">
+          <div>
+            <h2>Has it been leaked?</h2>
+            <p class="muted">Check it against hundreds of millions of passwords exposed in real data breaches, via <a href="https://haveibeenpwned.com/Passwords" target="_blank" rel="noopener">Have I Been Pwned</a>. Only the first 5 characters of a SHA-1 hash are sent, never the password itself.</p>
+          </div>
+          <button type="button" id="breach-btn" class="btn" disabled>Check breaches</button>
+        </div>
+        <div id="breach-result" class="breach-result" role="status" hidden></div>
+      </div>
+    </section>
+
+    <section class="wrap" id="generator-section">
+      <div class="card generator">
+        <div class="gen-head">
+          <h2>Need a better one?</h2>
+          <div class="tabs" role="tablist" aria-label="Generator type">
+            <button type="button" role="tab" id="tab-phrase" aria-selected="true" aria-controls="gen-panel">Passphrase</button>
+            <button type="button" role="tab" id="tab-random" aria-selected="false" aria-controls="gen-panel">Random</button>
+          </div>
+        </div>
+
+        <div id="gen-panel" role="tabpanel">
+          <output id="gen-output" class="gen-output mono" aria-live="polite"></output>
+
+          <div class="gen-controls">
+            <div class="range-row">
+              <label for="gen-size" id="gen-size-label">Words</label>
+              <input type="range" id="gen-size" min="3" max="8" value="5">
+              <span id="gen-size-val" class="mono">5</span>
+            </div>
+            <div class="opts" id="phrase-opts">
+              <label class="opt"><input type="checkbox" id="opt-cap" checked> Capitalize</label>
+              <label class="opt"><input type="checkbox" id="opt-num" checked> Add a number</label>
+              <label class="opt sep">Separator
+                <select id="opt-sep">
+                  <option value="-">-</option>
+                  <option value=".">.</option>
+                  <option value="_">_</option>
+                  <option value=" ">space</option>
+                </select>
+              </label>
+            </div>
+            <div class="opts" id="random-opts" hidden>
+              <label class="opt"><input type="checkbox" id="opt-sym" checked> Symbols</label>
+              <label class="opt"><input type="checkbox" id="opt-amb" checked> Skip look-alikes (0/O, 1/l)</label>
+            </div>
+          </div>
+
+          <p class="gen-meta muted" id="gen-meta"></p>
+
+          <div class="gen-actions">
+            <button type="button" id="gen-new" class="btn ghost">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>
+              New one
+            </button>
+            <button type="button" id="gen-copy" class="btn ghost">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>
+              <span>Copy</span>
+            </button>
+            <button type="button" id="gen-test" class="btn">Test it above</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap explain">
+      <h2 class="section-title">How the estimate works</h2>
+      <div class="explain-grid">
+        <article>
+          <span class="num mono">01</span>
+          <h3>Attackers don't guess randomly</h3>
+          <p>Cracking tools start with leaked password lists, then dictionary words with l33t swaps, years, and keyboard runs like <code>qwerty</code>. So <code>Summer2024!</code> ticks every box on a typical "rules" list and still falls almost instantly. This checker scores the pieces the way a cracker would, not by counting character types.</p>
+        </article>
+        <article>
+          <span class="num mono">02</span>
+          <h3>Speed depends on where they attack</h3>
+          <p>A login page with lockouts allows maybe 100 tries an hour. A stolen database is a different story: if the site hashed passwords with fast MD5 or SHA-1, one GPU rig can test about 10 billion guesses a second. Slow hashes like bcrypt drop that to thousands. Assume the worst case.</p>
+        </article>
+        <article>
+          <span class="num mono">03</span>
+          <h3>Breach check without leaking</h3>
+          <p>The breach lookup uses <strong>k-anonymity</strong>. Your browser hashes the password with SHA-1 and sends only the first 5 hex characters. The API returns every leaked hash starting with that prefix (hundreds of them), and the match happens locally. Nobody learns what you typed.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <p>Built by Nikky Rivera · Florida Atlantic University · Midterm project</p>
+      <p class="muted">Estimates are a teaching tool, not a guarantee. Use a password manager and turn on MFA. Passphrase words: <a href="https://www.eff.org/dice" target="_blank" rel="noopener">EFF wordlist</a> (CC BY 3.0).</p>
+    </div>
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/words.js"></script>
+  <script src="js/analyzer.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
